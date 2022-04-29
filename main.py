@@ -8,11 +8,46 @@ Creating OOP Based GUI structure
 """ 
 
 from tkinter import *
+from tkinter import filedialog,messagebox
+import os
 
+# modules for playing sounds
+import time
+import wave
+# import pymedia.audio.sound as sound
 #constants
 MAX_DRUM_NUM = 5
 
 class DrumMachine():
+
+    def __init__(self):
+        self.widget_drum_name = []
+        self.widget_drum_file_name = [0]*MAX_DRUM_NUM
+        self.current_drum_no = 0
+
+    def drum_load(self, drum_no):
+            def callback(): 
+                self.current_drum_no = drum_no
+                try:
+                    file_name = filedialog.askopenfilename(defaultextension=".wav",filetypes=[("Wave Files","*.wav"),("OGG Files","*.ogg")])
+                    if not file_name: return
+                    try:
+                        del self.widget_drum_file_name[drum_no]
+                    except:pass
+                    self.widget_drum_file_name.insert(drum_no, file_name)
+                    drum_name = os.path.basename(file_name)
+                    self.widget_drum_name[drum_no].delete(0, END)
+                    self.widget_drum_name[drum_no].insert(0, drum_name)
+                except:
+                    messagebox.showerror('Invalid', "Error loading drum samples")
+            return callback
+    def button_clicked(self,i,j,bpu):
+        def callback():
+            btn = self.button[i][j]
+            color = 'grey55' if (j/bpu)%2 else 'khaki'
+            new_color = 'green' if btn.cget('bg') != 'green' else color
+            btn.config(bg=new_color)
+        return callback
 
     def create_play_bar(self):
         playbar_frame = Frame(self.root, height=15)
@@ -31,19 +66,25 @@ class DrumMachine():
         left_frame.grid(row=10,column=0,columnspan=6,sticky=W+E+N+S)
         tbicon = PhotoImage(file='images/openfile.gif')
         for i in range(0,MAX_DRUM_NUM):
-            button = Button(left_frame,image=tbicon)
+            button = Button(left_frame,image=tbicon,command=self.drum_load(i))
             button.image = tbicon
             button.grid(row=i,column=0,padx=5,pady=2)
             self.drum_entry = Entry(left_frame)
             self.drum_entry.grid(row=i,column=4,padx=7,pady=2)
-
+            self.widget_drum_file_name.append(self.drum_entry)
     def create_right_pad(self):
+        bpu = self.bpu.get()
+        units = self.units.get()
+        c = bpu * units
+    
         right_frame = Frame(self.root)
         right_frame.grid(row=10,column=6,sticky=W+E+N+S,padx=15,pady=2)
-        self.button = [[0 for x in range(4)] for x in range(MAX_DRUM_NUM)]
+        self.button = [[0 for x in range(c)] for x in range(MAX_DRUM_NUM)]
         for i in range(MAX_DRUM_NUM):
-            for j in range(4):
-                self.button[i][j] = Button(right_frame,bg='grey55')
+            for j in range(c):
+                self.active = False
+                color = 'grey55' if (j/bpu)%2 else 'khaki'
+                self.button[i][j] = Button(right_frame,bg=color,width=1,command=self.button_clicked(i,j,bpu))
                 self.button[i][j].grid(row=i,column=j)
     def create_top_bar(self):
         '''creating top buttons'''
@@ -54,7 +95,7 @@ class DrumMachine():
         Label(topbar_frame, text='Units:').grid(row=0, column=4)
         self.units = IntVar()
         self.units.set(4)
-        self.units_widget = Spinbox(topbar_frame, from_=1, to=8, width=5, textvariable=self.units)
+        self.units_widget = Spinbox(topbar_frame, from_=1, to=8, width=5, textvariable=self.units,command=self.create_right_pad)
         self.units_widget.grid(row=0, column=5)
         
         
@@ -62,7 +103,7 @@ class DrumMachine():
         Label(topbar_frame, text='BPUs:').grid(row=0, column=6)
         self.bpu = IntVar()
         self.bpu.set(4)
-        self.bpu_widget = Spinbox(topbar_frame, from_=1, to=10, width=5, textvariable=self.bpu)
+        self.bpu_widget = Spinbox(topbar_frame, from_=1, to=10, width=5, textvariable=self.bpu,command=self.create_right_pad)
         self.bpu_widget.grid(row=0, column=7)
 
     def app(self):
